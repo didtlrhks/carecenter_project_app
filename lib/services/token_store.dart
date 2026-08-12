@@ -14,7 +14,7 @@ class TokenStore {
   static const _fcmKey = 'cs.fcmToken';
 
   final FlutterSecureStorage _secure = const FlutterSecureStorage(
-    aOptions: AndroidOptions(),
+    aOptions: AndroidOptions(encryptedSharedPreferences: true),
   );
 
   SharedPreferences? _prefs;
