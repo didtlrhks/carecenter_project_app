@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:dio/dio.dart';
 
+import '../config/env.dart';
 import '../models/api_error.dart';
 import '../models/caregiver_profile.dart';
 import '../models/job_request.dart';
@@ -115,7 +116,25 @@ class ApiClient {
         }
         onUnauthorized?.call();
       }
-      throw _errorFrom(status, e.response?.data, fallback: '네트워크 오류가 발생했습니다.');
+      throw ApiException(status, 'NETWORK', _networkMessage(e));
+    }
+  }
+
+  String _networkMessage(DioException e) {
+    final base = dio.options.baseUrl;
+    switch (e.type) {
+      case DioExceptionType.connectionTimeout:
+      case DioExceptionType.sendTimeout:
+      case DioExceptionType.receiveTimeout:
+        return '서버 응답이 없습니다.\n$base';
+      case DioExceptionType.connectionError:
+      case DioExceptionType.unknown:
+        if (Env.looksLikeEmulatorOnlyHost(base)) {
+          return '서버에 연결할 수 없습니다.\n실기기는 에뮬레이터 주소(10.0.2.2/localhost)를 쓸 수 없습니다.\n로그인 화면에서 Mac IP로 서버 주소를 바꿔 주세요.\n현재: $base';
+        }
+        return '서버에 연결할 수 없습니다.\n$base\n백엔드가 켜져 있고 같은 Wi‑Fi인지 확인해 주세요.';
+      default:
+        return '네트워크 오류가 발생했습니다.\n$base';
     }
   }
 

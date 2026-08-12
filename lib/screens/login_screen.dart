@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
+import '../config/dev_settings.dart';
 import '../models/api_error.dart';
 import '../services/token_store.dart';
 import '../state/auth_controller.dart';
@@ -57,15 +58,22 @@ class _LoginScreenState extends State<LoginScreen> {
     final auth = context.read<AuthController>();
     final store = context.read<TokenStore>();
     try {
-      if (_server.text.trim().isNotEmpty) {
-        await store.setApiBaseUrl(_server.text.trim());
+      final server = _server.text.trim();
+      if (server.isNotEmpty) {
+        await store.setApiBaseUrl(server);
         auth.api.applyBaseUrl(store.apiBaseUrl);
       }
       await auth.login(id, password);
     } on ApiException catch (e) {
-      setState(() => _error = e.message);
+      setState(() {
+        _error = e.message;
+        if (e.code == 'NETWORK') _showServer = true;
+      });
     } catch (_) {
-      setState(() => _error = '로그인에 실패했습니다. 서버 주소를 확인해 주세요.');
+      setState(() {
+        _error = '로그인에 실패했습니다. 서버 주소를 확인해 주세요.';
+        _showServer = true;
+      });
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -140,7 +148,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         if (_error != null) ...[
                           const SizedBox(height: 12),
-                          Text(_error!, style: const TextStyle(color: AppColors.danger, fontWeight: FontWeight.w600)),
+                          Text(_error!, style: const TextStyle(color: AppColors.danger, fontWeight: FontWeight.w600, height: 1.35)),
                         ],
                         const SizedBox(height: 20),
                         FilledButton(
@@ -154,21 +162,27 @@ class _LoginScreenState extends State<LoginScreen> {
                   TextButton(
                     onPressed: () => setState(() => _showServer = !_showServer),
                     child: Text(
-                      _showServer ? '서버 설정 닫기' : '서버 설정',
+                      _showServer ? '서버 설정 닫기' : '서버 설정 (실기기 필수)',
                       style: const TextStyle(color: Color(0xFFADB7BE)),
                     ),
                   ),
-                  if (_showServer)
+                  if (_showServer) ...[
+                    Text(
+                      'Mac IP가 바뀌면 lib/config/dev_settings.dart 의 kDevHost 만 수정하세요.\n현재 기본: http://$kDevHost:$kDevPort/api/v1',
+                      style: const TextStyle(color: Color(0xFFADB7BE), fontSize: 13, height: 1.4),
+                    ),
+                    const SizedBox(height: 8),
                     TextField(
                       controller: _server,
                       style: const TextStyle(color: Colors.white),
-                      decoration: const InputDecoration(
-                        hintText: 'http://192.168.0.10:3000/api/v1',
-                        hintStyle: TextStyle(color: Color(0xFF7B8FA3)),
+                      decoration: InputDecoration(
+                        hintText: 'http://$kDevHost:$kDevPort/api/v1',
+                        hintStyle: const TextStyle(color: Color(0xFF7B8FA3)),
                         filled: true,
-                        fillColor: Color(0xFF35495D),
+                        fillColor: const Color(0xFF35495D),
                       ),
                     ),
+                  ],
                 ],
               ),
             ),

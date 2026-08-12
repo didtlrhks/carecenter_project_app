@@ -17,6 +17,9 @@ class AuthController extends ChangeNotifier {
   Me? user;
   String? lastError;
 
+  /// 로그인/복원 직후 FCM 토큰 등록 등.
+  Future<void> Function()? onSessionReady;
+
   bool get isLoggedIn => user != null;
 
   Future<void> bootstrap() async {
@@ -37,6 +40,7 @@ class AuthController extends ChangeNotifier {
           user = me;
           await store.persistUser(me);
           await _registerStoredDeviceToken();
+          await onSessionReady?.call();
         }
       } catch (_) {
         if (cached != null && cached.isCaregiver) {
@@ -64,6 +68,7 @@ class AuthController extends ChangeNotifier {
     user = payload.user;
     notifyListeners();
     await _registerStoredDeviceToken();
+    await onSessionReady?.call();
   }
 
   Future<void> logout() async {

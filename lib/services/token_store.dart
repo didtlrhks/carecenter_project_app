@@ -21,6 +21,11 @@ class TokenStore {
 
   Future<void> init() async {
     _prefs = await SharedPreferences.getInstance();
+    // 예전 기본값(10.0.2.2/localhost)이 저장돼 있으면 Mac LAN 기본값으로 교체.
+    final saved = _prefs?.getString(_apiKey);
+    if (saved == null || Env.looksLikeEmulatorOnlyHost(saved)) {
+      await setApiBaseUrl(Env.defaultBaseUrl());
+    }
   }
 
   String get apiBaseUrl => _prefs?.getString(_apiKey) ?? Env.defaultBaseUrl();

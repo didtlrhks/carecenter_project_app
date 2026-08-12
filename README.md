@@ -31,25 +31,49 @@ flutter pub get
 flutter run
 ```
 
-| 환경 | 기본 API |
-|------|----------|
-| iOS 시뮬레이터 / macOS | `http://localhost:3000/api/v1` |
-| Android 에뮬레이터 | `http://10.0.2.2:3000/api/v1` |
-| 실제 기기 | 로그인 화면 **서버 설정**에 Mac IP 입력. 예: `http://192.168.0.10:3000/api/v1` |
+실기기 기본 API는 `lib/config/dev_settings.dart` 의 `kDevHost`(현재 Mac LAN IP)입니다.  
+Mac IP가 바뀌면 그 파일만 고치면 됩니다. (`ipconfig getifaddr en0`)
 
-강제 지정:
+| 환경 | API |
+|------|-----|
+| 실기기 / 개발 기본 | `http://{kDevHost}:3000/api/v1` |
+| 강제 지정 | `flutter run --dart-define=API_BASE_URL=...` |
+
+시드 계정: `01012345678` / `Caregiver123!`
+
+## 로그인 vs Firebase
+
+**로그인은 Firebase Auth가 아닙니다.** 전화번호 + 비밀번호로 우리 서버 `POST /auth/login` 을 칩니다. SNS(구글/애플/카카오) 없음.
+
+Firebase는 **푸시(FCM)** 용입니다. 로그인 성공 후 FCM 토큰을 `POST /me/device-tokens` 로 올립니다.
+
+### 스토어 배포 없이 확인할 수 있나?
+
+| 무엇을 | 스토어 배포 | 필요한 것 |
+|--------|-------------|-----------|
+| 전화번호 로그인 | **필요 없음** | `flutter run` + 백엔드. 이미 동작 |
+| Firebase 이메일/비번 로그인 (쓰지 않음) | 필요 없음 | `google-services.json` 만 있으면 debug로 확인 가능 |
+| FCM 푸시 (Android) | **필요 없음** | 실기기 + Firebase 앱 등록 + `flutterfire configure` |
+| FCM 푸시 (iOS) | 스토어는 필요 없음 | **유료 Apple Developer** + APNs 키 + **실기기** (시뮬레이터 불가) |
+
+Play Store / App Store 올리기 전에 debug 빌드로 로그인·푸시 모두 확인 가능합니다.
+
+## Firebase 프로젝트 연결 (푸시)
+
+콘솔에서 Android 앱 ID `kr.centerservice.center_service_app`, iOS `kr.centerservice.centerServiceApp` 로 앱을 만든 뒤:
 
 ```bash
-flutter run --dart-define=API_BASE_URL=http://192.168.0.10:3000/api/v1
+dart pub global activate flutterfire_cli
+flutterfire configure
 ```
 
-## 시드 계정
+이 명령이 `lib/firebase_options.dart`, `android/app/google-services.json`, `ios/Runner/GoogleService-Info.plist` 를 채웁니다.
 
-| loginId | password |
-|---------|----------|
-| `01012345678` | `Caregiver123!` |
+설정 전에는 앱이 그대로 로그인/인박스 폴링으로 동작합니다. Firebase 초기화만 건너뜁니다.
 
-센터 관리자 계정으로 로그인하면 “센터 관리자는 웹을 사용하세요” 후 로그아웃됩니다.
+푸시 페이로드의 `jobRequestId` 로 공고 상세를 엽니다.
+
+서버 FCM 발송은 아직 인박스 저장이 기본입니다. 앱 수신·토큰 등록은 준비됐고, 콘솔에서 테스트 메시지를 보내 수신을 확인할 수 있습니다.
 
 ## API
 
@@ -60,10 +84,7 @@ flutter run --dart-define=API_BASE_URL=http://192.168.0.10:3000/api/v1
 - 시각은 UTC로 받고 **KST**로 표시
 - 토큰은 Secure Storage에 저장
 
-FCM 디바이스 토큰 API(`POST /me/device-tokens`)는 클라이언트에 준비되어 있습니다.  
-서버 Push 연동 전이므로 MVP는 인박스 폴링을 사용합니다.
-
-## 구현 범위 (MVP 1–6)
+## 구현 범위
 
 - [x] 로그인 / 토큰 저장 / `GET /me` + CAREGIVER 검사
 - [x] 콜 목록 + 상세 (확정 전 주소 비공개)
@@ -71,5 +92,5 @@ FCM 디바이스 토큰 API(`POST /me/device-tokens`)는 클라이언트에 준�
 - [x] 알림함 폴링
 - [x] 내 일정 (SELECTED 이후만)
 - [x] 프로필 · 가능시간 · 활동지역
-- [ ] FCM 토큰 실연동 (다음 단계)
-- [ ] 백그라운드 푸시 딥링크 (다음 단계)
+- [x] FCM 토큰 등록 / 알림 탭 딥링크 (Firebase 프로젝트 연결 후 실동작)
+- [ ] 서버 FCM 발송 (center-service)
