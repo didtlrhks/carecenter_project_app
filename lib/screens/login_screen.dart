@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../config/dev_settings.dart';
+import '../config/env.dart';
 import '../models/api_error.dart';
 import '../services/token_store.dart';
 import '../state/auth_controller.dart';
@@ -162,13 +163,13 @@ class _LoginScreenState extends State<LoginScreen> {
                   TextButton(
                     onPressed: () => setState(() => _showServer = !_showServer),
                     child: Text(
-                      _showServer ? '서버 설정 닫기' : '서버 설정 (실기기 필수)',
+                      _showServer ? '서버 설정 닫기' : '서버 설정',
                       style: const TextStyle(color: Color(0xFFADB7BE)),
                     ),
                   ),
                   if (_showServer) ...[
                     Text(
-                      'Mac IP가 바뀌면 lib/config/dev_settings.dart 의 kDevHost 만 수정하세요.\n현재 기본: http://$kDevHost:$kDevPort/api/v1',
+                      '기본 API: $kApiBaseUrl',
                       style: const TextStyle(color: Color(0xFFADB7BE), fontSize: 13, height: 1.4),
                     ),
                     const SizedBox(height: 8),
@@ -176,7 +177,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       controller: _server,
                       style: const TextStyle(color: Colors.white),
                       decoration: InputDecoration(
-                        hintText: 'http://$kDevHost:$kDevPort/api/v1',
+                        hintText: Env.defaultBaseUrl(),
                         hintStyle: const TextStyle(color: Color(0xFF7B8FA3)),
                         filled: true,
                         fillColor: const Color(0xFF35495D),

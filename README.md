@@ -23,7 +23,8 @@
 
 ## 실행
 
-백엔드가 `http://localhost:3000` 에서 켜져 있어야 합니다.
+운영 API: `https://api.yoyangcall.xyz/api/v1`  
+Swagger: `https://api.yoyangcall.xyz/api/docs`
 
 ```bash
 cd center-service-app
@@ -31,13 +32,11 @@ flutter pub get
 flutter run
 ```
 
-실기기 기본 API는 `lib/config/dev_settings.dart` 의 `kDevHost`(현재 Mac LAN IP)입니다.  
-Mac IP가 바뀌면 그 파일만 고치면 됩니다. (`ipconfig getifaddr en0`)
+로컬 서버를 쓰려면:
 
-| 환경 | API |
-|------|-----|
-| 실기기 / 개발 기본 | `http://{kDevHost}:3000/api/v1` |
-| 강제 지정 | `flutter run --dart-define=API_BASE_URL=...` |
+```bash
+flutter run --dart-define=API_BASE_URL=http://localhost:3000/api/v1
+```
 
 시드 계정: `01012345678` / `Caregiver123!`
 
@@ -60,7 +59,7 @@ Play Store / App Store 올리기 전에 debug 빌드로 로그인·푸시 모두
 
 ## Firebase 프로젝트 연결 (푸시)
 
-콘솔에서 Android 앱 ID `kr.centerservice.center_service_app`, iOS `kr.centerservice.centerServiceApp` 로 앱을 만든 뒤:
+콘솔에서 Android 앱 ID `kr.centerservice.center_service_app`, iOS `kr.centerserviceapp.centerServiceApp` 로 앱을 만든 뒤:
 
 ```bash
 dart pub global activate flutterfire_cli

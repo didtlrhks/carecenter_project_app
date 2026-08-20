@@ -129,8 +129,8 @@ class ApiClient {
         return '서버 응답이 없습니다.\n$base';
       case DioExceptionType.connectionError:
       case DioExceptionType.unknown:
-        if (Env.looksLikeEmulatorOnlyHost(base)) {
-          return '서버에 연결할 수 없습니다.\n실기기는 에뮬레이터 주소(10.0.2.2/localhost)를 쓸 수 없습니다.\n로그인 화면에서 Mac IP로 서버 주소를 바꿔 주세요.\n현재: $base';
+        if (Env.looksLikeStaleLocalHost(base)) {
+          return '서버에 연결할 수 없습니다.\n로컬 주소가 남아 있습니다. 앱을 재시작하면 운영 API로 바뀝니다.\n현재: $base';
         }
         return '서버에 연결할 수 없습니다.\n$base\n백엔드가 켜져 있고 같은 Wi‑Fi인지 확인해 주세요.';
       default:
