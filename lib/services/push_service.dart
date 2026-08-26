@@ -114,15 +114,26 @@ class PushService {
   }
 
   Future<void> syncToken() async {
-    if (!ready) return;
+    if (!ready) {
+      debugPrint('[Push] syncToken skipped: Firebase not ready');
+      return;
+    }
     final auth = _auth;
-    if (auth == null || !auth.isLoggedIn) return;
+    if (auth == null || !auth.isLoggedIn) {
+      debugPrint('[Push] syncToken skipped: not logged in');
+      return;
+    }
     try {
       final token = await FirebaseMessaging.instance.getToken();
-      if (token == null || token.isEmpty) return;
+      if (token == null || token.isEmpty) {
+        debugPrint('[Push] FCM token empty');
+        return;
+      }
+      debugPrint('[Push] FCM token acquired (${token.length} chars), registering…');
       await auth.setDeviceToken(token);
+      debugPrint('[Push] device token registered with server');
     } catch (e) {
-      debugPrint('FCM token sync failed: $e');
+      debugPrint('[Push] FCM token sync failed: $e');
     }
   }
 

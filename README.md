@@ -40,39 +40,82 @@ flutter run --dart-define=API_BASE_URL=http://localhost:3000/api/v1
 
 시드 계정: `01012345678` / `Caregiver123!`
 
-## 로그인 vs Firebase
+## 로그인
 
-**로그인은 Firebase Auth가 아닙니다.** 전화번호 + 비밀번호로 우리 서버 `POST /auth/login` 을 칩니다. SNS(구글/애플/카카오) 없음.
+**로그인은 Firebase Auth가 아닙니다.** 센터에 등록된 전화번호 + 비밀번호로 서버 `POST /auth/login` 만 호출합니다.  
+가입·비밀번호 찾기 UI는 없습니다. 모를 때는 센터에 문의합니다.
 
-Firebase는 **푸시(FCM)** 용입니다. 로그인 성공 후 FCM 토큰을 `POST /me/device-tokens` 로 올립니다.
+### UX
 
-### 스토어 배포 없이 확인할 수 있나?
+- 전화번호는 `010-1234-5678` 형식으로 보이고, 서버에는 숫자만 보냅니다.
+- 마지막 로그인 번호는 기기에 기억됩니다.
+- 첫 로그인 성공 후 **지문/얼굴로 열기**를 켤 수 있습니다.
+- 켠 뒤에는 앱 재실행 시 생체 인증으로 세션을 엽니다. 세션이 만료되면 비밀번호를 다시 입력합니다.
+
+### 확인
+
+| 경우 | 기대 |
+|------|------|
+| 미등록 번호 | 로그인 실패 |
+| 시드 `01012345678` / `Caregiver123!` | 성공 → (선택) 생체 설정 → 재실행 시 지문/얼굴 |
+| CAREGIVER가 아닌 계정 | “센터 관리자는 웹을 사용하세요” |
+
+## Firebase 푸시 (FCM)
+
+Firebase는 **푸시만** 담당합니다. 로그인 성공 후 FCM 토큰을 `POST /me/device-tokens` 로 올립니다.  
+설정 전에는 인박스 API 폴링만으로 알림 탭이 동작합니다.
+
+### 1회 연결
+
+콘솔에서 앱을 등록합니다.
+
+- Android: `kr.centerservice.center_service_app`
+- iOS: `kr.centerserviceapp.centerServiceApp`
+
+로컬 터미널에서 (브라우저 로그인 필요):
+
+```bash
+./tool/configure_firebase.sh
+```
+
+또는 수동으로:
+
+```bash
+firebase login --reauth
+dart pub global activate flutterfire_cli
+export PATH="$PATH:$HOME/.pub-cache/bin"
+cd center-service-app
+flutterfire configure \
+  --platforms=android,ios \
+  --android-package-name=kr.centerservice.center_service_app \
+  --ios-bundle-id=kr.centerserviceapp.centerServiceApp
+```
+
+생성·갱신되는 파일:
+
+- `lib/firebase_options.dart`
+- `android/app/google-services.json`
+- `ios/Runner/GoogleService-Info.plist`
+
+Android Google Services 플러그인은 `android/settings.gradle.kts`에 등록되어 있고,  
+`google-services.json`이 있을 때만 `android/app/build.gradle.kts`에서 적용됩니다.
+
+### 푸시 확인
+
+1. 앱 로그인 후 로그에 FCM 토큰 / 서버 `device-tokens` 등록 확인
+2. Firebase 콘솔 → Messaging → **테스트 메시지** → 앱 토큰 붙여넣기
+3. 포그라운드: 로컬 알림 / 백그라운드·종료: 시스템 알림
+4. 알림 탭 또는 `jobRequestId` 딥링크로 공고 상세
+
+서버가 FCM Admin으로 자동 발송하기 전이어도, 콘솔 테스트 메시지로 수신은 확인할 수 있습니다.
+
+### 스토어 없이 확인
 
 | 무엇을 | 스토어 배포 | 필요한 것 |
 |--------|-------------|-----------|
-| 전화번호 로그인 | **필요 없음** | `flutter run` + 백엔드. 이미 동작 |
-| Firebase 이메일/비번 로그인 (쓰지 않음) | 필요 없음 | `google-services.json` 만 있으면 debug로 확인 가능 |
+| 전화번호 로그인 | **필요 없음** | `flutter run` + 백엔드 |
 | FCM 푸시 (Android) | **필요 없음** | 실기기 + Firebase 앱 등록 + `flutterfire configure` |
-| FCM 푸시 (iOS) | 스토어는 필요 없음 | **유료 Apple Developer** + APNs 키 + **실기기** (시뮬레이터 불가) |
-
-Play Store / App Store 올리기 전에 debug 빌드로 로그인·푸시 모두 확인 가능합니다.
-
-## Firebase 프로젝트 연결 (푸시)
-
-콘솔에서 Android 앱 ID `kr.centerservice.center_service_app`, iOS `kr.centerserviceapp.centerServiceApp` 로 앱을 만든 뒤:
-
-```bash
-dart pub global activate flutterfire_cli
-flutterfire configure
-```
-
-이 명령이 `lib/firebase_options.dart`, `android/app/google-services.json`, `ios/Runner/GoogleService-Info.plist` 를 채웁니다.
-
-설정 전에는 앱이 그대로 로그인/인박스 폴링으로 동작합니다. Firebase 초기화만 건너뜁니다.
-
-푸시 페이로드의 `jobRequestId` 로 공고 상세를 엽니다.
-
-서버 FCM 발송은 아직 인박스 저장이 기본입니다. 앱 수신·토큰 등록은 준비됐고, 콘솔에서 테스트 메시지를 보내 수신을 확인할 수 있습니다.
+| FCM 푸시 (iOS) | 스토어는 필요 없음 | **유료 Apple Developer** + APNs 키 + **실기기** |
 
 ## API
 
@@ -86,6 +129,7 @@ flutterfire configure
 ## 구현 범위
 
 - [x] 로그인 / 토큰 저장 / `GET /me` + CAREGIVER 검사
+- [x] 큰 UI · 전화 하이픈 · 번호 기억 · 생체 잠금해제
 - [x] 콜 목록 + 상세 (확정 전 주소 비공개)
 - [x] 가능 / 거절 / 철회
 - [x] 알림함 폴링

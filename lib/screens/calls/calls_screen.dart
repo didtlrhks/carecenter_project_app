@@ -7,49 +7,68 @@ import '../../theme/app_theme.dart';
 import '../../utils/date_format.dart';
 import '../../utils/labels.dart';
 import '../../utils/regions.dart';
+import '../../widgets/empty_duty_illustration.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/job_when.dart';
+import '../../widgets/segmented_pills.dart';
 import '../../widgets/status_badge.dart';
 import 'job_detail_screen.dart';
 
-class CallsScreen extends StatelessWidget {
+class CallsScreen extends StatefulWidget {
   const CallsScreen({super.key});
+
+  @override
+  State<CallsScreen> createState() => _CallsScreenState();
+}
+
+class _CallsScreenState extends State<CallsScreen> {
+  int _tab = 0;
 
   @override
   Widget build(BuildContext context) {
     final jobs = context.watch<JobsController>();
+    final items = _tab == 0 ? jobs.active : jobs.past;
 
-    return DefaultTabController(
-      length: 2,
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text('콜'),
-          bottom: const TabBar(
-            indicatorColor: AppColors.primary,
-            labelColor: Colors.white,
-            unselectedLabelColor: Color(0xFFADB7BE),
-            tabs: [
-              Tab(text: '진행중'),
-              Tab(text: '지난 건'),
-            ],
-          ),
-        ),
-        body: TabBarView(
+    return Scaffold(
+      backgroundColor: AppColors.bg,
+      body: SafeArea(
+        bottom: false,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _JobList(
-              items: jobs.active,
-              loading: jobs.loading,
-              error: jobs.error,
-              emptyTitle: '진행 중인 콜이 없습니다',
-              emptySubtitle: '센터에서 근무 요청이 오면 여기에 표시됩니다.',
-              onRefresh: jobs.refresh,
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.pageH,
+                AppSpacing.pageTop,
+                AppSpacing.pageH,
+                0,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('근무', style: AppType.pageTitle),
+                  const SizedBox(height: AppSpacing.md),
+                  SegmentedPills(
+                    labels: const ['진행중 공고', '지원 내역'],
+                    index: _tab,
+                    onChanged: (i) => setState(() => _tab = i),
+                  ),
+                  const SizedBox(height: AppSpacing.section),
+                ],
+              ),
             ),
-            _JobList(
-              items: jobs.past,
-              loading: jobs.loading,
-              error: jobs.error,
-              emptyTitle: '지난 콜이 없습니다',
-              onRefresh: jobs.refresh,
+            Expanded(
+              child: _JobList(
+                items: items,
+                loading: jobs.loading,
+                error: jobs.error,
+                emptyTitle: _tab == 0 ? '진행 중인 근무가 없습니다' : '지원 내역이 없습니다',
+                emptySubtitle: _tab == 0
+                    ? '새로운 근무 요청이 오면\n여기서 바로 확인할 수 있습니다.'
+                    : '지원하거나 응답한 근무가 여기에 쌓입니다.',
+                showDutyIllustration: _tab == 0,
+                onRefresh: jobs.refresh,
+              ),
             ),
           ],
         ),
@@ -65,6 +84,7 @@ class _JobList extends StatelessWidget {
     required this.error,
     required this.emptyTitle,
     this.emptySubtitle,
+    this.showDutyIllustration = false,
     required this.onRefresh,
   });
 
@@ -73,22 +93,27 @@ class _JobList extends StatelessWidget {
   final String? error;
   final String emptyTitle;
   final String? emptySubtitle;
+  final bool showDutyIllustration;
   final Future<void> Function() onRefresh;
 
   @override
   Widget build(BuildContext context) {
     if (loading && items.isEmpty) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(child: CircularProgressIndicator(color: AppColors.primary));
     }
     if (error != null && items.isEmpty) {
       return Center(
         child: Padding(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(AppSpacing.xl),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(error!, textAlign: TextAlign.center),
-              const SizedBox(height: 12),
+              Text(
+                error!,
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: AppColors.body, height: 1.4),
+              ),
+              const SizedBox(height: AppSpacing.sm),
               FilledButton(onPressed: onRefresh, child: const Text('다시 시도')),
             ],
           ),
@@ -97,25 +122,35 @@ class _JobList extends StatelessWidget {
     }
 
     return RefreshIndicator(
+      color: AppColors.primary,
       onRefresh: onRefresh,
       child: items.isEmpty
           ? ListView(
               physics: const AlwaysScrollableScrollPhysics(),
               children: [
                 SizedBox(
-                  height: MediaQuery.sizeOf(context).height * 0.5,
+                  height: MediaQuery.sizeOf(context).height * 0.55,
                   child: EmptyState(
-                    icon: Icons.campaign_outlined,
+                    illustration: showDutyIllustration
+                        ? const EmptyDutyIllustration(size: 72)
+                        : null,
+                    icon: showDutyIllustration ? null : Icons.inbox_outlined,
                     title: emptyTitle,
                     subtitle: emptySubtitle,
+                    illustrationSize: 72,
                   ),
                 ),
               ],
             )
           : ListView.separated(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.pageH,
+                0,
+                AppSpacing.pageH,
+                AppSpacing.xxl,
+              ),
               itemCount: items.length,
-              separatorBuilder: (_, _) => const SizedBox(height: 10),
+              separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.sm),
               itemBuilder: (context, i) => JobCard(job: items[i]),
             ),
     );
@@ -129,16 +164,22 @@ class JobCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
+    return Material(
+      color: AppColors.card,
+      borderRadius: AppRadii.mdAll,
       child: InkWell(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppRadii.mdAll,
         onTap: () {
           Navigator.of(context).push(
             MaterialPageRoute(builder: (_) => JobDetailScreen(jobId: job.id)),
           );
         },
-        child: Padding(
-          padding: const EdgeInsets.all(16),
+        child: Container(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          decoration: BoxDecoration(
+            borderRadius: AppRadii.mdAll,
+            border: Border.all(color: AppColors.border),
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -148,21 +189,32 @@ class JobCard extends StatelessWidget {
                   const Spacer(),
                   Text(
                     requestTypeLabel(job.requestType),
-                    style: const TextStyle(color: AppColors.body, fontWeight: FontWeight.w700),
+                    style: const TextStyle(
+                      color: AppColors.body,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13,
+                    ),
                   ),
                 ],
               ),
               const SizedBox(height: 10),
               Text(
                 '${serviceTypeLabel(job.serviceType)} · ${payLabel(job.payAmount)}',
-                style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: AppColors.heading),
+                style: const TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.heading,
+                ),
               ),
               const SizedBox(height: 6),
-              Text(jobWhenLabel(job), style: const TextStyle(color: AppColors.heading, height: 1.35)),
+              Text(
+                jobWhenLabel(job),
+                style: const TextStyle(color: AppColors.heading, height: 1.35, fontSize: 14),
+              ),
               const SizedBox(height: 4),
               Text(
                 '${regionLabel(job.regionCode)} · ${job.center?.name ?? '센터'}',
-                style: const TextStyle(color: AppColors.body),
+                style: const TextStyle(color: AppColors.body, fontSize: 14),
               ),
             ],
           ),

@@ -95,7 +95,7 @@ String candidateBadge(String status) {
     case 'APPLIED':
       return (AppColors.purpleSoft, AppColors.purple);
     case 'SELECTED':
-      return (AppColors.successSoft, AppColors.primaryDark);
+      return (AppColors.successSoft, AppColors.success);
     case 'NOT_SELECTED':
       return (const Color(0xFFEEF1F4), AppColors.body);
     case 'REJECTED':

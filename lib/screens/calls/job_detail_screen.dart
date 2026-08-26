@@ -166,25 +166,49 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
       showDragHandle: true,
       builder: (ctx) {
         return Padding(
-          padding: const EdgeInsets.fromLTRB(20, 0, 20, 28),
+          padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(title, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
-              const SizedBox(height: 8),
-              Text(body, style: const TextStyle(color: AppColors.body, height: 1.45)),
-              const SizedBox(height: 20),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.heading,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                body,
+                style: const TextStyle(
+                  color: AppColors.body,
+                  height: 1.5,
+                  fontSize: 16,
+                ),
+              ),
+              const SizedBox(height: 24),
               FilledButton(
                 onPressed: () => Navigator.pop(ctx, true),
-                style: destructive
-                    ? FilledButton.styleFrom(backgroundColor: AppColors.danger)
-                    : null,
+                style: (destructive
+                        ? FilledButton.styleFrom(backgroundColor: AppColors.danger)
+                        : FilledButton.styleFrom())
+                    .copyWith(
+                  minimumSize: const WidgetStatePropertyAll(Size.fromHeight(56)),
+                  textStyle: const WidgetStatePropertyAll(
+                    TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+                  ),
+                ),
                 child: Text(action),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 10),
               OutlinedButton(
                 onPressed: () => Navigator.pop(ctx, false),
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size.fromHeight(56),
+                  textStyle: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
+                ),
                 child: const Text('취소'),
               ),
             ],
@@ -198,9 +222,15 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
   Widget build(BuildContext context) {
     final job = _job;
     return Scaffold(
-      appBar: AppBar(title: const Text('근무 요청')),
+      backgroundColor: AppColors.bg,
+      appBar: AppBar(
+        title: const Text(
+          '근무 요청',
+          style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+        ),
+      ),
       body: _loading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
           : _error != null
               ? Center(
                   child: Padding(
@@ -208,8 +238,12 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(_error!, textAlign: TextAlign.center),
-                        const SizedBox(height: 12),
+                        Text(
+                          _error!,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(fontSize: 16, height: 1.4),
+                        ),
+                        const SizedBox(height: 16),
                         FilledButton(onPressed: _load, child: const Text('다시 시도')),
                       ],
                     ),
@@ -221,36 +255,44 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                       children: [
                         Expanded(
                           child: RefreshIndicator(
+                            color: AppColors.primary,
                             onRefresh: _load,
                             child: ListView(
-                              padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                              padding: const EdgeInsets.fromLTRB(
+                                AppSpacing.pageH,
+                                AppSpacing.md,
+                                AppSpacing.pageH,
+                                AppSpacing.xl,
+                              ),
                               children: [
                                 _Header(job: job),
-                                const SizedBox(height: 12),
+                                const SizedBox(height: AppSpacing.md),
+                                _HeroSummary(job: job),
+                                const SizedBox(height: AppSpacing.md),
                                 _InfoCard(job: job),
                                 if (job.isApplied) ...[
-                                  const SizedBox(height: 12),
-                                  _Notice(
+                                  const SizedBox(height: AppSpacing.md),
+                                  const _Notice(
                                     color: AppColors.purpleSoft,
                                     text: '센터에서 확인 중입니다.\n지원은 확정이 아닙니다. 일정이 바로 생기지 않습니다.',
                                   ),
                                 ],
                                 if (job.isInvited) ...[
-                                  const SizedBox(height: 12),
+                                  const SizedBox(height: AppSpacing.md),
                                   const _Notice(
                                     color: AppColors.primarySoft,
                                     text: '[가능]은 지원입니다. 센터가 최종 수락해야 확정되고 일정에 표시됩니다.',
                                   ),
                                 ],
                                 if (job.isSelected) ...[
-                                  const SizedBox(height: 12),
+                                  const SizedBox(height: AppSpacing.md),
                                   const _Notice(
                                     color: AppColors.successSoft,
                                     text: '근무가 확정되었습니다. 방문에 필요한 위치를 확인하세요.',
                                   ),
                                 ],
                                 if (job.myCandidateStatus == 'NOT_SELECTED') ...[
-                                  const SizedBox(height: 12),
+                                  const SizedBox(height: AppSpacing.md),
                                   const _Notice(
                                     color: Color(0xFFEEF1F4),
                                     text: '다른 요양보호사가 선정되어 마감되었습니다. 일정은 생기지 않습니다.',
@@ -260,13 +302,14 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                             ),
                           ),
                         ),
-                        if (job.isInvited || job.isApplied) _Actions(
-                          job: job,
-                          acting: _acting,
-                          onApply: _apply,
-                          onReject: _reject,
-                          onWithdraw: _withdraw,
-                        ),
+                        if (job.isInvited || job.isApplied)
+                          _Actions(
+                            job: job,
+                            acting: _acting,
+                            onApply: _apply,
+                            onReject: _reject,
+                            onWithdraw: _withdraw,
+                          ),
                       ],
                     ),
     );
@@ -281,12 +324,77 @@ class _Header extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        StatusBadge(status: job.myCandidateStatus),
-        const SizedBox(width: 8),
-        Text(requestTypeLabel(job.requestType), style: const TextStyle(fontWeight: FontWeight.w700)),
+        StatusBadge(status: job.myCandidateStatus, large: true),
+        const SizedBox(width: 10),
+        Text(
+          requestTypeLabel(job.requestType),
+          style: const TextStyle(
+            fontWeight: FontWeight.w800,
+            fontSize: 16,
+            color: AppColors.heading,
+          ),
+        ),
         const Spacer(),
-        Text(jobStatusLabel(job.status), style: const TextStyle(color: AppColors.body, fontSize: 13)),
+        Text(
+          jobStatusLabel(job.status),
+          style: const TextStyle(
+            color: AppColors.body,
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
       ],
+    );
+  }
+}
+
+class _HeroSummary extends StatelessWidget {
+  const _HeroSummary({required this.job});
+  final JobRequest job;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      decoration: BoxDecoration(
+        color: AppColors.card,
+        borderRadius: AppRadii.lgAll,
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            serviceTypeLabel(job.serviceType),
+            style: const TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.w800,
+              color: AppColors.heading,
+              height: 1.25,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            payLabel(job.payAmount),
+            style: const TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
+              color: AppColors.primary,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            jobWhenLabel(job),
+            style: const TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w600,
+              color: AppColors.heading,
+              height: 1.4,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -301,47 +409,71 @@ class _InfoCard extends StatelessWidget {
         ? (job.locationText?.isNotEmpty == true ? job.locationText! : regionLabel(job.regionCode))
         : regionLabel(job.regionCode);
 
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            _row('서비스', serviceTypeLabel(job.serviceType)),
-            _row('급여', payLabel(job.payAmount)),
-            _row('일시', jobWhenLabel(job)),
-            _row(job.canShowExactAddress ? '주소' : '지역', location),
-            _row('센터', job.center?.name ?? '—'),
-            if (job.specialRequirements?.isNotEmpty == true)
-              _row('요청사항', job.specialRequirements!),
-            if (!job.canShowExactAddress)
-              const Padding(
-                padding: EdgeInsets.only(top: 8),
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    '정확한 주소는 확정 후에만 확인할 수 있습니다.',
-                    style: TextStyle(color: AppColors.muted, fontSize: 13),
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.md, AppSpacing.lg, AppSpacing.md),
+      decoration: BoxDecoration(
+        color: AppColors.card,
+        borderRadius: AppRadii.lgAll,
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        children: [
+          _row(job.canShowExactAddress ? '주소' : '지역', location),
+          _row('센터', job.center?.name ?? '—'),
+          _row(
+            '요청사항',
+            (job.specialRequirements?.trim().isNotEmpty == true)
+                ? job.specialRequirements!.trim()
+                : '없음',
+          ),
+          if (!job.canShowExactAddress)
+            const Padding(
+              padding: EdgeInsets.only(top: 10, bottom: 4),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  '정확한 주소는 확정 후에만 확인할 수 있습니다.',
+                  style: TextStyle(
+                    color: AppColors.muted,
+                    fontSize: 14,
+                    height: 1.4,
                   ),
                 ),
               ),
-          ],
-        ),
+            ),
+        ],
       ),
     );
   }
 
   Widget _row(String label, String value) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.symmetric(vertical: 12),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 72,
-            child: Text(label, style: const TextStyle(color: AppColors.body, fontWeight: FontWeight.w600)),
+            width: 84,
+            child: Text(
+              label,
+              style: const TextStyle(
+                color: AppColors.body,
+                fontWeight: FontWeight.w700,
+                fontSize: 16,
+              ),
+            ),
           ),
           Expanded(
-            child: Text(value, style: const TextStyle(color: AppColors.heading, fontWeight: FontWeight.w700, height: 1.35)),
+            child: Text(
+              value,
+              style: const TextStyle(
+                color: AppColors.heading,
+                fontWeight: FontWeight.w700,
+                fontSize: 17,
+                height: 1.4,
+              ),
+            ),
           ),
         ],
       ),
@@ -358,9 +490,17 @@ class _Notice extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(12)),
-      child: Text(text, style: const TextStyle(height: 1.45, color: AppColors.heading)),
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(color: color, borderRadius: AppRadii.mdAll),
+      child: Text(
+        text,
+        style: const TextStyle(
+          height: 1.5,
+          fontSize: 15,
+          fontWeight: FontWeight.w600,
+          color: AppColors.heading,
+        ),
+      ),
     );
   }
 }
@@ -388,21 +528,29 @@ class _Actions extends StatelessWidget {
       child: SafeArea(
         top: false,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+          padding: const EdgeInsets.fromLTRB(20, 14, 20, 14),
           child: job.isInvited
               ? Row(
                   children: [
                     Expanded(
                       child: OutlinedButton(
                         onPressed: acting ? null : onReject,
+                        style: OutlinedButton.styleFrom(
+                          minimumSize: const Size.fromHeight(56),
+                          textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+                        ),
                         child: const Text('거절'),
                       ),
                     ),
-                    const SizedBox(width: 10),
+                    const SizedBox(width: 12),
                     Expanded(
                       flex: 2,
                       child: FilledButton(
                         onPressed: acting ? null : onApply,
+                        style: FilledButton.styleFrom(
+                          minimumSize: const Size.fromHeight(56),
+                          textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+                        ),
                         child: Text(acting ? '처리 중…' : '가능'),
                       ),
                     ),
@@ -410,7 +558,11 @@ class _Actions extends StatelessWidget {
                 )
               : FilledButton(
                   onPressed: acting ? null : onWithdraw,
-                  style: FilledButton.styleFrom(backgroundColor: AppColors.navy),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.navy,
+                    minimumSize: const Size.fromHeight(56),
+                    textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+                  ),
                   child: Text(acting ? '처리 중…' : '지원 철회'),
                 ),
         ),

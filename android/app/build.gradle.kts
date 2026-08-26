@@ -4,6 +4,11 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+// google-services.json 이 있을 때만 적용 (flutterfire configure 후)
+if (file("google-services.json").exists()) {
+    apply(plugin = "com.google.gms.google-services")
+}
+
 android {
     namespace = "kr.centerservice.center_service_app"
     compileSdk = flutter.compileSdkVersion

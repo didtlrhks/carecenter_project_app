@@ -12,6 +12,8 @@ class TokenStore {
   static const _userKey = 'cs.user';
   static const _apiKey = 'cs.apiBaseUrl';
   static const _fcmKey = 'cs.fcmToken';
+  static const _phoneKey = 'cs.lastPhone';
+  static const _biometricKey = 'cs.biometricEnabled';
 
   final FlutterSecureStorage _secure = const FlutterSecureStorage(
     aOptions: AndroidOptions(encryptedSharedPreferences: true),
@@ -31,6 +33,18 @@ class TokenStore {
 
   Future<void> setApiBaseUrl(String url) async {
     await _prefs?.setString(_apiKey, url.trim());
+  }
+
+  String? get lastPhone => _prefs?.getString(_phoneKey);
+
+  Future<void> setLastPhone(String phone) async {
+    await _prefs?.setString(_phoneKey, phone);
+  }
+
+  bool get biometricEnabled => _prefs?.getBool(_biometricKey) ?? false;
+
+  Future<void> setBiometricEnabled(bool value) async {
+    await _prefs?.setBool(_biometricKey, value);
   }
 
   Future<String?> get accessToken => _secure.read(key: _accessKey);

@@ -6,6 +6,7 @@ import '../state/notifications_controller.dart';
 import '../state/profile_controller.dart';
 import '../state/schedules_controller.dart';
 import '../theme/app_theme.dart';
+import '../widgets/app_bottom_nav.dart';
 import 'calls/calls_screen.dart';
 import 'notifications/notifications_screen.dart';
 import 'profile/profile_screen.dart';
@@ -62,9 +63,9 @@ class _ShellScreenState extends State<ShellScreen> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     final unread = context.watch<NotificationsController>().unreadCount;
-    final invited = context.watch<JobsController>().invitedCount;
 
     return Scaffold(
+      backgroundColor: AppColors.bg,
       body: IndexedStack(
         index: _index,
         children: const [
@@ -74,48 +75,10 @@ class _ShellScreenState extends State<ShellScreen> with WidgetsBindingObserver {
           ProfileScreen(),
         ],
       ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _index,
-        onDestinationSelected: (i) => setState(() => _index = i),
-        indicatorColor: AppColors.primarySoft,
-        destinations: [
-          NavigationDestination(
-            icon: Badge(
-              isLabelVisible: invited > 0,
-              label: Text('$invited'),
-              child: const Icon(Icons.campaign_outlined),
-            ),
-            selectedIcon: Badge(
-              isLabelVisible: invited > 0,
-              label: Text('$invited'),
-              child: const Icon(Icons.campaign),
-            ),
-            label: '콜',
-          ),
-          const NavigationDestination(
-            icon: Icon(Icons.calendar_month_outlined),
-            selectedIcon: Icon(Icons.calendar_month),
-            label: '일정',
-          ),
-          NavigationDestination(
-            icon: Badge(
-              isLabelVisible: unread > 0,
-              label: Text('$unread'),
-              child: const Icon(Icons.notifications_outlined),
-            ),
-            selectedIcon: Badge(
-              isLabelVisible: unread > 0,
-              label: Text('$unread'),
-              child: const Icon(Icons.notifications),
-            ),
-            label: '알림',
-          ),
-          const NavigationDestination(
-            icon: Icon(Icons.person_outline),
-            selectedIcon: Icon(Icons.person),
-            label: '내정보',
-          ),
-        ],
+      bottomNavigationBar: AppBottomNav(
+        index: _index,
+        onChanged: (i) => setState(() => _index = i),
+        notificationBadge: unread,
       ),
     );
   }

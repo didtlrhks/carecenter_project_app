@@ -9,6 +9,7 @@ import '../models/api_error.dart';
 import '../services/token_store.dart';
 import '../state/auth_controller.dart';
 import '../theme/app_theme.dart';
+import '../utils/phone.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -31,8 +32,14 @@ class _LoginScreenState extends State<LoginScreen> {
     super.initState();
     final store = context.read<TokenStore>();
     _server.text = store.apiBaseUrl;
+    final last = store.lastPhone;
+    if (last != null && last.isNotEmpty) {
+      _id.text = formatPhoneDisplay(last);
+    } else if (kDebugMode) {
+      _id.text = formatPhoneDisplay('01012345678');
+    }
+    // 로그아웃 후에도 번호만 채워지고 비번이 비어 “로그인이 안 됨”처럼 보이던 문제 방지
     if (kDebugMode) {
-      _id.text = '01012345678';
       _password.text = 'Caregiver123!';
     }
   }
@@ -46,9 +53,9 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _submit() async {
-    final id = _id.text.replaceAll(RegExp(r'[^0-9+]'), '');
+    final id = digitsOnly(_id.text);
     final password = _password.text;
-    if (id.isEmpty || password.isEmpty) {
+    if (id.length < 10 || password.isEmpty) {
       setState(() => _error = '전화번호와 비밀번호를 입력해 주세요.');
       return;
     }
@@ -65,6 +72,7 @@ class _LoginScreenState extends State<LoginScreen> {
         auth.api.applyBaseUrl(store.apiBaseUrl);
       }
       await auth.login(id, password);
+      // 생체 안내는 AuthGate에서 처리 (로그인 화면이 바로 dispose 되므로 여기서 띄우지 않음)
     } on ApiException catch (e) {
       setState(() {
         _error = e.message;
@@ -72,7 +80,7 @@ class _LoginScreenState extends State<LoginScreen> {
       });
     } catch (_) {
       setState(() {
-        _error = '로그인에 실패했습니다. 서버 주소를 확인해 주세요.';
+        _error = '로그인에 실패했습니다.\n센터에 등록된 번호인지 확인해 주세요.';
         _showServer = true;
       });
     } finally {
@@ -93,29 +101,29 @@ class _LoginScreenState extends State<LoginScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 16),
                   const Text(
                     '요양보호사',
-                    style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w800, fontSize: 14),
+                    style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w800, fontSize: 16),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 10),
                   const Text(
-                    '근무 콜에 응답하고\n확정된 일정을 확인하세요',
+                    '전화번호로\n로그인하세요',
                     style: TextStyle(
                       color: Colors.white,
-                      fontSize: 26,
+                      fontSize: 30,
                       fontWeight: FontWeight.w800,
-                      height: 1.3,
+                      height: 1.25,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 10),
                   const Text(
-                    '[가능]은 지원입니다. 센터가 최종 수락해야 확정됩니다.',
-                    style: TextStyle(color: Color(0xFFADB7BE), height: 1.4),
+                    '센터에 등록된 번호만 사용할 수 있습니다.\n비밀번호를 모르면 센터에 문의해 주세요.',
+                    style: TextStyle(color: Color(0xFFADB7BE), height: 1.45, fontSize: 15),
                   ),
                   const SizedBox(height: 28),
                   Container(
-                    padding: const EdgeInsets.all(20),
+                    padding: const EdgeInsets.all(22),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(16),
@@ -123,24 +131,40 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        const Text('전화번호', style: TextStyle(fontWeight: FontWeight.w700, color: AppColors.heading)),
-                        const SizedBox(height: 8),
+                        const Text(
+                          '전화번호',
+                          style: TextStyle(fontWeight: FontWeight.w800, color: AppColors.heading, fontSize: 16),
+                        ),
+                        const SizedBox(height: 10),
                         TextField(
                           controller: _id,
                           keyboardType: TextInputType.phone,
                           textInputAction: TextInputAction.next,
-                          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                          decoration: const InputDecoration(hintText: '01012345678'),
+                          style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700, letterSpacing: 0.5),
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly,
+                            LengthLimitingTextInputFormatter(11),
+                            PhoneHyphenFormatter(),
+                          ],
+                          decoration: const InputDecoration(
+                            hintText: '010-1234-5678',
+                            contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+                          ),
                         ),
-                        const SizedBox(height: 16),
-                        const Text('비밀번호', style: TextStyle(fontWeight: FontWeight.w700, color: AppColors.heading)),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 20),
+                        const Text(
+                          '비밀번호',
+                          style: TextStyle(fontWeight: FontWeight.w800, color: AppColors.heading, fontSize: 16),
+                        ),
+                        const SizedBox(height: 10),
                         TextField(
                           controller: _password,
                           obscureText: _obscure,
+                          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
                           onSubmitted: (_) => _submit(),
                           decoration: InputDecoration(
-                            hintText: '비밀번호',
+                            hintText: '센터에서 알려준 비밀번호',
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
                             suffixIcon: IconButton(
                               onPressed: () => setState(() => _obscure = !_obscure),
                               icon: Icon(_obscure ? Icons.visibility_outlined : Icons.visibility_off_outlined),
@@ -148,18 +172,30 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
                         if (_error != null) ...[
-                          const SizedBox(height: 12),
-                          Text(_error!, style: const TextStyle(color: AppColors.danger, fontWeight: FontWeight.w600, height: 1.35)),
+                          const SizedBox(height: 14),
+                          Text(
+                            _error!,
+                            style: const TextStyle(
+                              color: AppColors.danger,
+                              fontWeight: FontWeight.w700,
+                              height: 1.35,
+                              fontSize: 15,
+                            ),
+                          ),
                         ],
-                        const SizedBox(height: 20),
+                        const SizedBox(height: 24),
                         FilledButton(
                           onPressed: _busy ? null : _submit,
-                          child: Text(_busy ? '로그인 중…' : '로그인'),
+                          style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(56)),
+                          child: Text(
+                            _busy ? '로그인 중…' : '로그인',
+                            style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w800),
+                          ),
                         ),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
                   TextButton(
                     onPressed: () => setState(() => _showServer = !_showServer),
                     child: Text(
