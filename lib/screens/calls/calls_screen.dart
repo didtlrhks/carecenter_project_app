@@ -64,8 +64,8 @@ class _CallsScreenState extends State<CallsScreen> {
                 error: jobs.error,
                 emptyTitle: _tab == 0 ? '진행 중인 근무가 없습니다' : '지원 내역이 없습니다',
                 emptySubtitle: _tab == 0
-                    ? '새로운 근무 요청이 오면\n여기서 바로 확인할 수 있습니다.'
-                    : '지원하거나 응답한 근무가 여기에 쌓입니다.',
+                    ? '새로운 근무 요청이 오면\n여기서 확인할 수 있습니다.'
+                    : '응답한 근무가 여기에 표시됩니다.',
                 showDutyIllustration: _tab == 0,
                 onRefresh: jobs.refresh,
               ),

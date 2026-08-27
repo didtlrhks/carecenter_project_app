@@ -48,7 +48,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
       if (!mounted) return;
       if (e.isNotInvited) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('초대받지 않은 근무 요청입니다.')),
+          const SnackBar(content: Text('확인할 수 없는 근무 요청입니다.')),
         );
         Navigator.of(context).pop();
         return;
@@ -64,9 +64,9 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
 
   Future<void> _apply() async {
     final confirmed = await _confirm(
-      title: '지원할까요?',
-      body: '가능을 눌러도 바로 확정되지 않습니다.\n센터가 최종 수락하면 근무가 확정됩니다.',
-      action: '지원하기',
+      title: '가능으로 보낼까요?',
+      body: '센터에 가능 의사를 전달합니다.\n진행할까요?',
+      action: '보내기',
     );
     if (confirmed != true || !mounted) return;
     await _runAction(() async {
@@ -76,9 +76,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
         setState(() => _job = job);
         context.read<JobsController>().upsert(job);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('지원이 전달되었습니다. 센터가 최종 수락하면 확정됩니다.'),
-          ),
+          const SnackBar(content: Text('센터에 전달되었습니다.')),
         );
       } on ApiException catch (e) {
         if (!mounted) return;
@@ -98,7 +96,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
         }
         if (e.code == 'INVALID_STATE') {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('마감되었거나 취소된 공고입니다.')),
+            const SnackBar(content: Text('이미 마감되었거나 취소된 요청입니다.')),
           );
           await _load();
           return;
@@ -127,9 +125,9 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
 
   Future<void> _withdraw() async {
     final confirmed = await _confirm(
-      title: '지원을 철회할까요?',
-      body: '철회하면 다시 [가능] / [거절]을 선택할 수 있습니다.',
-      action: '철회',
+      title: '가능 의사를 취소할까요?',
+      body: '취소하면 다시 가능·거절을 선택할 수 있습니다.',
+      action: '취소하기',
       destructive: true,
     );
     if (confirmed != true || !mounted) return;
@@ -138,7 +136,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
       if (!mounted) return;
       setState(() => _job = job);
       context.read<JobsController>().upsert(job);
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('지원을 철회했습니다.')));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('가능 의사를 취소했습니다.')));
     });
   }
 
@@ -274,28 +272,28 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                                   const SizedBox(height: AppSpacing.md),
                                   const _Notice(
                                     color: AppColors.purpleSoft,
-                                    text: '센터에서 확인 중입니다.\n지원은 확정이 아닙니다. 일정이 바로 생기지 않습니다.',
+                                    text: '센터에서 확인 중입니다.\n결과가 나오면 알려드릴게요.',
                                   ),
                                 ],
                                 if (job.isInvited) ...[
                                   const SizedBox(height: AppSpacing.md),
                                   const _Notice(
                                     color: AppColors.primarySoft,
-                                    text: '[가능]은 지원입니다. 센터가 최종 수락해야 확정되고 일정에 표시됩니다.',
+                                    text: '가능하시면 아래 버튼을 눌러 주세요.',
                                   ),
                                 ],
                                 if (job.isSelected) ...[
                                   const SizedBox(height: AppSpacing.md),
                                   const _Notice(
                                     color: AppColors.successSoft,
-                                    text: '근무가 확정되었습니다. 방문에 필요한 위치를 확인하세요.',
+                                    text: '근무가 확정되었습니다.\n방문 주소와 시간을 확인해 주세요.',
                                   ),
                                 ],
                                 if (job.myCandidateStatus == 'NOT_SELECTED') ...[
                                   const SizedBox(height: AppSpacing.md),
                                   const _Notice(
                                     color: Color(0xFFEEF1F4),
-                                    text: '다른 요양보호사가 선정되어 마감되었습니다. 일정은 생기지 않습니다.',
+                                    text: '다른 분이 선정되어 모집이 마감되었습니다.',
                                   ),
                                 ],
                               ],
@@ -433,7 +431,7 @@ class _InfoCard extends StatelessWidget {
               child: Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
-                  '정확한 주소는 확정 후에만 확인할 수 있습니다.',
+                  '방문 주소는 확정 후 확인할 수 있습니다.',
                   style: TextStyle(
                     color: AppColors.muted,
                     fontSize: 14,
@@ -563,7 +561,7 @@ class _Actions extends StatelessWidget {
                     minimumSize: const Size.fromHeight(56),
                     textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
                   ),
-                  child: Text(acting ? '처리 중…' : '지원 철회'),
+                  child: Text(acting ? '처리 중…' : '가능 취소'),
                 ),
         ),
       ),

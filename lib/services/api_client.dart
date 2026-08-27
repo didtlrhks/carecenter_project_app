@@ -43,7 +43,7 @@ class ApiClient {
 
   void Function()? onUnauthorized;
 
-  Future<void>? _refreshInFlight;
+  Future<_RefreshOutcome>? _refreshInFlight;
 
   void applyBaseUrl(String url) {
     dio.options.baseUrl = url.endsWith('/') ? url.substring(0, url.length - 1) : url;
@@ -73,8 +73,8 @@ class ApiClient {
       final body = res.data;
 
       if (status == 401 && !skipAuth && !retried) {
-        final ok = await _refresh();
-        if (ok) {
+        final outcome = await _refresh();
+        if (outcome == _RefreshOutcome.success) {
           return _request(
             path,
             method: method,
@@ -85,7 +85,9 @@ class ApiClient {
             parse: parse,
           );
         }
-        onUnauthorized?.call();
+        if (outcome == _RefreshOutcome.invalidSession) {
+          onUnauthorized?.call();
+        }
         throw _errorFrom(status, body, fallback: '로그인이 필요합니다.');
       }
 
@@ -102,8 +104,8 @@ class ApiClient {
       if (e.error is ApiException) throw e.error as ApiException;
       final status = e.response?.statusCode ?? 0;
       if (status == 401 && !skipAuth && !retried) {
-        final ok = await _refresh();
-        if (ok) {
+        final outcome = await _refresh();
+        if (outcome == _RefreshOutcome.success) {
           return _request(
             path,
             method: method,
@@ -114,7 +116,9 @@ class ApiClient {
             parse: parse,
           );
         }
-        onUnauthorized?.call();
+        if (outcome == _RefreshOutcome.invalidSession) {
+          onUnauthorized?.call();
+        }
       }
       throw ApiException(status, 'NETWORK', _networkMessage(e));
     }
@@ -152,43 +156,81 @@ class ApiClient {
     return ApiException(status, status == 0 ? 'NETWORK' : 'UNKNOWN', fallback);
   }
 
-  Future<bool> _refresh() async {
+  Future<_RefreshOutcome> _refresh() async {
     if (_refreshInFlight != null) {
-      try {
-        await _refreshInFlight;
-        return (await _store.accessToken)?.isNotEmpty == true;
-      } catch (_) {
-        return false;
-      }
+      return _refreshInFlight!;
     }
-    final completer = Completer<void>();
+    final completer = Completer<_RefreshOutcome>();
     _refreshInFlight = completer.future;
     try {
-      final refreshToken = await _store.refreshToken;
-      if (refreshToken == null || refreshToken.isEmpty) return false;
+      final outcome = await _doRefresh();
+      completer.complete(outcome);
+      return outcome;
+    } catch (e) {
+      completer.complete(_RefreshOutcome.transientFailure);
+      return _RefreshOutcome.transientFailure;
+    } finally {
+      _refreshInFlight = null;
+    }
+  }
+
+  Future<_RefreshOutcome> _doRefresh() async {
+    final refreshToken = await _store.refreshToken;
+    if (refreshToken == null || refreshToken.isEmpty) {
+      await _store.clearSession();
+      return _RefreshOutcome.invalidSession;
+    }
+
+    try {
       final res = await dio.post<dynamic>(
         '/auth/refresh',
         data: {'refreshToken': refreshToken},
         options: Options(extra: {'skipAuth': true}),
       );
       final body = res.data;
-      if (res.statusCode != 200 || body is! Map || body['error'] != null || body['data'] == null) {
+      final status = res.statusCode ?? 0;
+
+      // 서버가 리프레시를 거부한 경우만 로그아웃
+      if (status == 401 || status == 403) {
         await _store.clearSession();
-        return false;
+        return _RefreshOutcome.invalidSession;
       }
-      final data = Map<String, dynamic>.from(body['data'] as Map);
+
+      if (status != 200 || body is! Map) {
+        return _RefreshOutcome.transientFailure;
+      }
+
+      final map = Map<String, dynamic>.from(body);
+      final error = map['error'];
+      if (error != null || map['data'] == null) {
+        final code = error is Map ? error['code'] as String? : null;
+        if (code == 'UNAUTHENTICATED' || status == 401) {
+          await _store.clearSession();
+          return _RefreshOutcome.invalidSession;
+        }
+        return _RefreshOutcome.transientFailure;
+      }
+
+      final data = Map<String, dynamic>.from(map['data'] as Map);
       final tokens = RefreshTokens.fromJson(data);
-      await _store.persistTokens(accessToken: tokens.accessToken, refreshToken: tokens.refreshToken);
+      await _store.persistTokens(
+        accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
+      );
       if (data['user'] is Map) {
         await _store.persistUser(Me.fromJson(Map<String, dynamic>.from(data['user'] as Map)));
       }
-      return true;
+      return _RefreshOutcome.success;
+    } on DioException catch (e) {
+      final status = e.response?.statusCode ?? 0;
+      if (status == 401 || status == 403) {
+        await _store.clearSession();
+        return _RefreshOutcome.invalidSession;
+      }
+      // 타임아웃·연결 실패 시 세션 유지 (폴링이 로그인으로 보내지 않도록)
+      return _RefreshOutcome.transientFailure;
     } catch (_) {
-      await _store.clearSession();
-      return false;
-    } finally {
-      completer.complete();
-      _refreshInFlight = null;
+      return _RefreshOutcome.transientFailure;
     }
   }
 
@@ -365,4 +407,12 @@ class ApiClient {
       parse: (_) {},
     );
   }
+}
+
+enum _RefreshOutcome {
+  success,
+  /// 리프레시 토큰 만료/폐기 → 로그인 필요
+  invalidSession,
+  /// 일시적 네트워크/서버 오류 → 세션 유지
+  transientFailure,
 }

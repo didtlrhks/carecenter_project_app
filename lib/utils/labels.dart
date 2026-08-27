@@ -54,9 +54,9 @@ String jobStatusLabel(String status) {
     case 'OPEN':
       return '모집 중';
     case 'PENDING_APPROVAL':
-      return '지원자 대기';
+      return '선정 중';
     case 'ASSIGNED':
-      return '최종 확정';
+      return '확정';
     case 'CANCELLED':
       return '취소';
     case 'EXPIRED':
@@ -70,9 +70,9 @@ String jobStatusLabel(String status) {
 String candidateBadge(String status) {
   switch (status) {
     case 'INVITED':
-      return '새 콜';
+      return '새 요청';
     case 'APPLIED':
-      return '센터 확인 중';
+      return '확인 중';
     case 'SELECTED':
       return '확정';
     case 'NOT_SELECTED':

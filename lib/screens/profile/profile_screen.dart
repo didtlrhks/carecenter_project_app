@@ -58,16 +58,16 @@ class ProfileScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 16),
-            const Text('콜 수락', style: TextStyle(fontWeight: FontWeight.w800)),
+            const Text('근무 요청 받기', style: TextStyle(fontWeight: FontWeight.w800)),
             const SizedBox(height: 4),
-            const Text('끄면 해당 유형 콜이 오지 않습니다.', style: TextStyle(color: AppColors.body, fontSize: 13)),
+            const Text('끄면 해당 유형의 요청이 오지 않습니다.', style: TextStyle(color: AppColors.body, fontSize: 13)),
             const SizedBox(height: 8),
             Card(
               child: Column(
                 children: [
                   SwitchListTile(
-                    title: const Text('대타 수락', style: TextStyle(fontWeight: FontWeight.w700)),
-                    subtitle: const Text('BACKUP 콜'),
+                    title: const Text('대타 요청', style: TextStyle(fontWeight: FontWeight.w700)),
+                    subtitle: const Text('기존 근무 대타'),
                     value: profile?.acceptsBackup ?? false,
                     activeThumbColor: AppColors.primary,
                     onChanged: profile == null
@@ -76,8 +76,8 @@ class ProfileScreen extends StatelessWidget {
                   ),
                   const Divider(height: 1),
                   SwitchListTile(
-                    title: const Text('신규 수락', style: TextStyle(fontWeight: FontWeight.w700)),
-                    subtitle: const Text('NEW 콜'),
+                    title: const Text('신규 요청', style: TextStyle(fontWeight: FontWeight.w700)),
+                    subtitle: const Text('새로운 방문 근무'),
                     value: profile?.acceptsNew ?? false,
                     activeThumbColor: AppColors.primary,
                     onChanged: profile == null

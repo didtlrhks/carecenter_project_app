@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
@@ -32,9 +33,8 @@ class AuthController extends ChangeNotifier {
   Future<void> bootstrap() async {
     api.applyBaseUrl(store.apiBaseUrl);
     api.onUnauthorized = () {
-      user = null;
-      locked = false;
-      notifyListeners();
+      // 리프레시가 진짜 실패한 뒤에만 호출됨. 로컬 세션도 맞춤.
+      unawaited(_forceLocalSignOut());
     };
 
     final access = await store.accessToken;
@@ -62,6 +62,14 @@ class AuthController extends ChangeNotifier {
 
     await _restoreSession();
     ready = true;
+    notifyListeners();
+  }
+
+  Future<void> _forceLocalSignOut() async {
+    await store.clearSession();
+    user = null;
+    locked = false;
+    justLoggedInWithPassword = false;
     notifyListeners();
   }
 

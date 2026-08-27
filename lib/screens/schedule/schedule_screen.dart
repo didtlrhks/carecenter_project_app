@@ -34,8 +34,8 @@ class ScheduleScreen extends StatelessWidget {
                         height: 360,
                         child: EmptyState(
                           icon: Icons.event_available_outlined,
-                          title: '확정된 근무가 없습니다',
-                          subtitle: '지원한 건은 일정에 표시되지 않습니다.\n센터가 최종 수락하면 여기에 나타납니다.',
+                          title: '예정된 근무가 없습니다',
+                          subtitle: '확정된 근무가 있으면\n여기에서 확인할 수 있습니다.',
                         ),
                       ),
                     ],

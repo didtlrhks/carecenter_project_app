@@ -37,7 +37,7 @@ class NotificationsScreen extends StatelessWidget {
                         child: EmptyState(
                           icon: Icons.notifications_none,
                           title: '알림이 없습니다',
-                          subtitle: '새 콜과 확정 결과는 여기에 쌓입니다.',
+                          subtitle: '알림이 오면 여기에 표시됩니다.',
                         ),
                       ),
                     ],
